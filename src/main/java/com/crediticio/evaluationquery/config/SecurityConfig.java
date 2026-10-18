@@ -18,9 +18,9 @@ import java.util.List;
 
 /**
  * Matriz de permisos de evaluation-query-api (HU10, docs/security/matriz-permisos-evaluation-query-api.md).
- * Todavía no existen endpoints de negocio (HU13–HU15): toda ruta se deniega salvo /actuator/health.
- * Cuando se implementen, cada endpoint se añadirá aquí con los roles de HU10 CA04. Cada petición se
- * autentica con su JWT (sin sesión HTTP ni llamadas a auth-api); el rol proviene solo del token.
+ * Las consultas de explicación (HU13) e historial (HU15) se permiten a ambos roles (HU10 CA04); toda otra
+ * ruta se deniega salvo /actuator/health. Las recomendaciones (HU14) se añadirán cuando se implementen. Cada
+ * petición se autentica con su JWT (sin sesión HTTP ni llamadas a auth-api); el rol proviene solo del token.
  */
 @Configuration
 @EnableWebSecurity
@@ -37,6 +37,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sesion -> sesion.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(autorizacion -> autorizacion
+                        .requestMatchers(HttpMethod.GET, "/api/v1/evaluaciones/*/explicacion")
+                                .hasAnyRole(JwtConfig.ROL_ADMINISTRADOR, JwtConfig.ROL_ANALISTA)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/solicitantes/*/evaluaciones")
+                                .hasAnyRole(JwtConfig.ROL_ADMINISTRADOR, JwtConfig.ROL_ANALISTA)
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                         .requestMatchers("/error").permitAll()
                         .anyRequest().denyAll())

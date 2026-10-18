@@ -12,7 +12,7 @@
 	<artifactId>evaluation-query-api</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>evaluation-query-api</name>
-	<description>Consulta de explicaciones, recomendaciones e historial de evaluaciones (HU13-HU15). Por ahora solo la autorización de HU10.</description>
+	<description>Consulta de explicaciones, recomendaciones e historial de evaluaciones (HU13-HU15), con la autorización de HU10.</description>
 	<properties>
 		<java.version>21</java.version>
 	</properties>
@@ -34,7 +34,22 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
+		<!-- HU13 y HU15: lectura (solo SELECT) de los datos históricos de scoring-api (decisión D4-A) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-jdbc</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
 
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>

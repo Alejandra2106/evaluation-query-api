@@ -6,8 +6,10 @@ Característica: Consultar la explicación de una evaluación
 
   # API responsable: evaluation-query-api. Esta historia explica una evaluación ya registrada; no duplica el
   # motor de scoring de scoring-api ni lo vuelve a ejecutar.
-  # Este documento especifica requisitos; no declara la historia implementada. Estado al 2026-10-18: no
-  # implementada (evaluation-query-api no tiene endpoints de negocio ni acceso a datos).
+  # Estado (2026-10-18): implementada en evaluation-query-api sobre el esquema actual de scoring-api (V1–V9),
+  # verificada por ConsultasEvaluacionIntegracionTest (H2) y EsquemaScoringContratoIT (PostgreSQL, esquema
+  # temporal). Pendiente: el 409 para evaluaciones PENDIENTE (P-HU13-02), que depende del estado de la saga
+  # (V11 de scoring-api, no aplicada); la medición de CA10 en un entorno representativo.
   #
   # Criterios originales (texto sin cambios):
   #   CA01. Permitir consultar una evaluación por su identificador.
@@ -38,10 +40,10 @@ Característica: Consultar la explicación de una evaluación
   #   historial del solicitante y enlaza con HU13 y HU14.
   # - Las evaluaciones PENDIENTE (saga de HU14) no se presentan como completas (ver P-HU13-02).
   #
-  # Decisiones pendientes (no se agregan como requisitos aprobados):
-  # - P-HU13-01. Ruta: propuesta GET /api/v1/evaluaciones/{idEvaluacion}/explicacion, pendiente de
-  #   implementación.
-  # - P-HU13-02. Evaluación PENDIENTE: propuesta 409 con el código EVALUACION_PENDIENTE (igual que P-HU14-03).
+  # Decisiones aprobadas el 2026-10-18 (se aprobaron las propuestas siguientes tal como estaban redactadas):
+  # - P-HU13-01. Ruta: GET /api/v1/evaluaciones/{idEvaluacion}/explicacion (implementada).
+  # - P-HU13-02. Evaluación PENDIENTE: 409 con el código EVALUACION_PENDIENTE (igual que P-HU14-03). Pendiente
+  #   de implementación: requiere el estado de la saga (V11).
   # - P-HU13-03. CA03: las reglas de scoring se editan sin número de versión; la versión histórica disponible
   #   es la instantánea persistida en cada detalle. Propuesta: considerarla la versión histórica de la regla.
   #   Si se exige un identificador de versión, hace falta una decisión y un cambio de modelo en scoring-api.
@@ -51,10 +53,12 @@ Característica: Consultar la explicación de una evaluación
   #   existe un puntaje total almacenado.
   # - P-HU13-05. CA06 cuando la suma no coincide con el puntaje almacenado. Propuesta: tratarlo como un error
   #   de integridad (500 INTERNAL_ERROR registrado en el log), sin corregirlo ni ocultarlo.
-  # - P-HU13-06. CA11: propuesta de excluir el nombre, el documento, los ingresos, las deudas y los valores
-  #   reales del solicitante; incluir o no el identificador del solicitante queda por decidir.
-  # - P-HU13-07. Código de error del 404: propuesto EVALUACION_NO_ENCONTRADA (el mismo que usa scoring-api),
-  #   sujeto a verificar su compatibilidad con el contrato común de errores.
+  # - P-HU13-06. CA11: se excluyen el nombre, el documento, los ingresos, las deudas y los valores reales del
+  #   solicitante. La propuesta dejaba abierto el identificador del solicitante: no se incluye (criterio de
+  #   minimización); incluirlo requeriría una decisión nueva.
+  # - P-HU13-07. Código de error del 404: EVALUACION_NO_ENCONTRADA, con el mismo formato ApiError que
+  #   scoring-api.
+  # P-HU13-03, P-HU13-04 y P-HU13-05 se aprobaron tal como están redactadas arriba.
 
   Escenario: Consulta de la explicación de una evaluación (CA01, CA02)
     Dado una evaluación COMPLETADA registrada con su puntaje total y su clasificación
@@ -83,7 +87,7 @@ Característica: Consultar la explicación de una evaluación
     Y el puntaje total y la clasificación son los persistidos, sin recalcular
 
   Escenario: Evaluación inexistente (CA08)
-    # Código de error propuesto (P-HU13-07).
+    # Código de error aprobado (P-HU13-07).
     Cuando un usuario autorizado consulta la explicación de una evaluación que no existe
     Entonces la respuesta es 404 con el código EVALUACION_NO_ENCONTRADA
 
@@ -113,20 +117,20 @@ Característica: Consultar la explicación de una evaluación
     Entonces la respuesta devuelve el mismo X-Trace-Id
     Y las respuestas de error incluyen ese traceId
 
-  @pendiente-aprobacion
-  Escenario: Explicación de una evaluación PENDIENTE (P-HU13-02)
+  @aprobado @pendiente-de-implementacion
+  Escenario: Explicación de una evaluación PENDIENTE (P-HU13-02, requiere V11)
     Dado una evaluación PENDIENTE
     Cuando un usuario autorizado consulta su explicación
     Entonces la respuesta es 409 con el código EVALUACION_PENDIENTE
 
-  @pendiente-aprobacion
+  @aprobado
   Escenario: Evaluación registrada antes de HU12 (P-HU13-04)
     Dado una evaluación sin puntaje total ni clasificación persistidos
     Cuando un usuario autorizado consulta su explicación
     Entonces se muestra sin clasificación, sin asignarle ninguna
     Y su puntaje se identifica expresamente como la suma derivada de sus detalles históricos
 
-  @pendiente-aprobacion
+  @aprobado
   Escenario: Suma inconsistente con el puntaje almacenado (P-HU13-05)
     Dado una evaluación cuya suma de contribuciones no coincide con su puntaje total almacenado
     Cuando un usuario autorizado consulta su explicación

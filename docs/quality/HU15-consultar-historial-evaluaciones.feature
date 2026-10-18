@@ -5,8 +5,11 @@ Característica: Consultar el historial de evaluaciones de un solicitante
   Para revisar la evolución de sus resultados a lo largo del tiempo
 
   # API responsable: evaluation-query-api.
-  # Este documento especifica requisitos; no declara la historia implementada. Estado al 2026-10-18: no
-  # implementada.
+  # Estado (2026-10-18): implementada en evaluation-query-api sobre el esquema actual de scoring-api (V1–V9),
+  # verificada por ConsultasEvaluacionIntegracionTest (H2) y EsquemaScoringContratoIT (PostgreSQL, esquema
+  # temporal). Pendientes: CA08 (exclusión de las PENDIENTE) y el campo estado, que dependen del estado de la
+  # saga (V11 de scoring-api, no aplicada; hoy no existen evaluaciones PENDIENTE); la referencia a las
+  # recomendaciones de CA09, que depende de HU14; la medición de CA12 en un entorno representativo.
   #
   # Criterios originales (texto sin cambios):
   #   CA01. Permitir consultar el historial mediante el identificador del solicitante.
@@ -39,18 +42,18 @@ Característica: Consultar el historial de evaluaciones de un solicitante
   # - CA05 y CA07: las evaluaciones anteriores a la clasificación (HU12) no tienen clasificación persistida;
   #   se muestran sin clasificación y nunca se reclasifican.
   #
-  # Decisiones pendientes de aprobación (no se inventa una regla):
-  # - P-HU15-01. Puntaje de las evaluaciones anteriores a HU12, que no tienen puntaje total persistido.
-  #   Propuesta: mostrar la suma de sus detalles históricos identificada expresamente como valor derivado,
-  #   nunca como dato persistido originalmente.
-  # - P-HU15-02. Ruta: propuesta GET /api/v1/solicitantes/{idSolicitante}/evaluaciones, pendiente de
-  #   implementación.
-  # - P-HU15-03. Forma de las referencias de CA09: depende de las rutas propuestas para HU13 (P-HU13-01) y
-  #   HU14 (P-HU14-05), ambas pendientes de implementación.
-  # - P-HU15-05. Código de error del 404: propuesto SOLICITANTE_NO_ENCONTRADO (el mismo que usa scoring-api),
-  #   sujeto a verificar su compatibilidad con el contrato común de errores.
-  # - P-HU15-04. Campos adicionales por evaluación (estado, indicador de clasificada, versión de la política,
-  #   origen del puntaje): propuestos, no aprobados.
+  # Decisiones aprobadas el 2026-10-18 (se aprobaron las propuestas tal como estaban redactadas):
+  # - P-HU15-01. Puntaje de las evaluaciones anteriores a HU12, que no tienen puntaje total persistido: la suma
+  #   de sus detalles históricos, identificada expresamente como valor derivado (origenPuntaje =
+  #   DERIVADO_DE_DETALLES), nunca como dato persistido originalmente. Implementado.
+  # - P-HU15-02. Ruta: GET /api/v1/solicitantes/{idSolicitante}/evaluaciones. Implementada.
+  # - P-HU15-03. Referencias de CA09: cada elemento incluye la ruta de la explicación de HU13 (campo
+  #   explicacion, implementado). La referencia a las recomendaciones se añadirá cuando HU14 esté
+  #   implementada: hoy no existe un contrato real al que enlazar.
+  # - P-HU15-04. Campos adicionales: clasificada, versionPolitica y origenPuntaje (implementados); estado
+  #   (pendiente de V11).
+  # - P-HU15-05. Código de error del 404: SOLICITANTE_NO_ENCONTRADO, con el mismo formato ApiError que
+  #   scoring-api. Implementado.
 
   Escenario: Historial de un solicitante con evaluaciones (CA01, CA02, CA05, CA06, CA07)
     Dado un solicitante con tres evaluaciones COMPLETADA de fechas distintas
@@ -66,7 +69,7 @@ Característica: Consultar el historial de evaluaciones de un solicitante
     Y el orden es el mismo en cada consulta
 
   Escenario: Solicitante inexistente (CA02, CA03)
-    # Código de error propuesto (P-HU15-05).
+    # Código de error aprobado (P-HU15-05).
     Cuando un usuario autorizado consulta el historial de un solicitante que no existe
     Entonces la respuesta es 404 con el código SOLICITANTE_NO_ENCONTRADO
     Y no se consulta ninguna evaluación
@@ -76,7 +79,8 @@ Característica: Consultar el historial de evaluaciones de un solicitante
     Cuando un usuario autorizado consulta su historial
     Entonces la respuesta es 200 con una lista vacía
 
-  Escenario: Las evaluaciones PENDIENTE no se presentan como completas (CA08)
+  @pendiente-de-implementacion
+  Escenario: Las evaluaciones PENDIENTE no se presentan como completas (CA08, requiere V11)
     Dado un solicitante con una evaluación COMPLETADA y otra PENDIENTE
     Cuando un usuario autorizado consulta su historial
     Entonces el historial contiene solo la evaluación COMPLETADA
@@ -89,6 +93,7 @@ Característica: Consultar el historial de evaluaciones de un solicitante
 
   Escenario: Acceso al detalle y a las recomendaciones (CA09)
     Cuando un usuario autorizado consulta el historial de un solicitante
+    # Implementada la referencia a la explicación; la de las recomendaciones queda pendiente de HU14.
     Entonces cada evaluación incluye la referencia para consultar su explicación (HU13) y sus recomendaciones (HU14)
     Y el historial no incluye detalles por regla ni recomendaciones
 
@@ -122,7 +127,7 @@ Característica: Consultar el historial de evaluaciones de un solicitante
     Entonces la respuesta devuelve el mismo X-Trace-Id
     Y las respuestas de error incluyen ese traceId
 
-  @pendiente-aprobacion
+  @aprobado
   Escenario: Puntaje de una evaluación anterior a HU12 (P-HU15-01)
     Dado una evaluación registrada antes de HU12, sin puntaje total persistido
     Cuando un usuario autorizado consulta el historial de su solicitante
