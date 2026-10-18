@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -26,8 +27,14 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private static final String[] RUTAS_SWAGGER = {"/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html"};
+
     @Value("${app.cors.allowed-origins:http://localhost:3000}")
     private String allowedOrigins;
+
+    /** Swagger solo es público cuando springdoc está habilitado (perfil dev); si no, sus rutas se deniegan. */
+    @Value("${springdoc.api-docs.enabled:false}")
+    private boolean swaggerHabilitado;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -42,6 +49,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/solicitantes/*/evaluaciones")
                                 .hasAnyRole(JwtConfig.ROL_ADMINISTRADOR, JwtConfig.ROL_ANALISTA)
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        .requestMatchers(RUTAS_SWAGGER).access((autenticacion, contexto) ->
+                                new AuthorizationDecision(swaggerHabilitado))
                         .requestMatchers("/error").permitAll()
                         .anyRequest().denyAll())
                 .oauth2ResourceServer(recursos -> recursos

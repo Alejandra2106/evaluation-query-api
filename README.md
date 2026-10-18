@@ -29,6 +29,7 @@ Todos exigen `Authorization: Bearer <token>` de `auth-api` con rol `ADMINISTRADO
 | `GET /api/v1/evaluaciones/{idEvaluacion}/explicacion` | 200 explicación; 400 `VALIDATION_ERROR`; 401 `NO_AUTENTICADO`; 403 `ACCESO_DENEGADO`; 404 `EVALUACION_NO_ENCONTRADA`; 500 `INTERNAL_ERROR` si los datos persistidos son incoherentes |
 | `GET /api/v1/solicitantes/{idSolicitante}/evaluaciones` | 200 lista (vacía si no tiene evaluaciones); 400; 401; 403; 404 `SOLICITANTE_NO_ENCONTRADO` |
 | `GET /actuator/health` | Público, sin detalles |
+| `GET /v3/api-docs`, `/swagger-ui.html` | Solo con el perfil `dev` (`-Dspring-boot.run.profiles=dev`); si no, 401 |
 
 Explicación (HU13):
 

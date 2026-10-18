@@ -11,7 +11,7 @@ vez ni con tokens reales de `auth-api` (ver "Limitaciones").
 |---|---|---|---|---|
 | `auth-api` | 8081 | `AUTH_API_PORT` | Esquema `auth` (Flyway propio; el esquema debe existir) | Solo con el perfil `dev` |
 | `scoring-api` | 8080 (Spring Boot por defecto) | — | Esquema `public` (Flyway V1–V9) | Solo con el perfil `dev` (`/swagger-ui.html`) |
-| `evaluation-query-api` | 8082 | `EVALUATION_QUERY_API_PORT` | Lee `public` (solo SELECT, sin Flyway) | No disponible (no incluye springdoc) |
+| `evaluation-query-api` | 8082 | `EVALUATION_QUERY_API_PORT` | Lee `public` (solo SELECT, sin Flyway) | Solo con el perfil `dev` (`/swagger-ui.html`) |
 
 Las tres comparten la misma instancia y base PostgreSQL (`motor_scoring` en el entorno local actual).
 
@@ -122,6 +122,5 @@ En local, `AUTH_COOKIE_SECURE=false` puede ser necesario si el frontend se sirve
   `scoring-api` sigue respondiendo 403 al `ADMINISTRADOR_RIESGO` en `GET /api/v1/evaluaciones/{id}`; el cambio
   no está autorizado todavía. El administrador sí puede usar la explicación y el historial.
 - **Estado de la saga:** no existe todavía; las evaluaciones no tienen estado `PENDIENTE`/`COMPLETADA`.
-- **evaluation-query-api sin Swagger.**
 - **No verificado:** flujo con las tres API levantadas a la vez, tokens reales de `auth-api`, rol de base de
   datos de solo lectura para `evaluation-query-api` y tiempos de respuesta en un entorno representativo.

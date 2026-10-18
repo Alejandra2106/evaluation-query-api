@@ -21,6 +21,7 @@ describen requisitos y propuestas todavía no implementados.
 | `GET /api/v1/evaluaciones/{idEvaluacion}/explicacion` | Permitido | Permitido | 401 | HU13 CA09, HU10 CA04 |
 | `GET /api/v1/solicitantes/{idSolicitante}/evaluaciones` | Permitido | Permitido | 401 | HU15 CA10, HU10 CA04 |
 | `GET /actuator/health` | Público, sin detalles | Público, sin detalles | Público | Operación |
+| Swagger (`/v3/api-docs/**`, `/swagger-ui/**`) | Solo con el perfil `dev` | Solo con el perfil `dev` | Solo con el perfil `dev`; si no, 401 | Operación |
 | Cualquier otra ruta o método | 403 | 403 | 401 | Denegada por defecto |
 
 Implementadas el 2026-10-18 y verificadas por `ConsultasEvaluacionIntegracionTest` (cadena de seguridad real,
