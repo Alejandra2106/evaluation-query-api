@@ -1,0 +1,13 @@
+target/
+*.log
+.idea/
+*.iml
+.vscode/
+
+# Claves y secretos: nunca se versionan
+*.pem
+*.key
+*.p12
+*.jks
+keys/
+secrets/
