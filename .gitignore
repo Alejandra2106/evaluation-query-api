@@ -11,3 +11,14 @@ target/
 *.jks
 keys/
 secrets/
+
+# Variables de entorno locales, artefactos y respaldos: nunca se versionan
+.env
+.env.*
+build/
+respaldos/
+*.dump
+
+# Estado local de herramientas
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
