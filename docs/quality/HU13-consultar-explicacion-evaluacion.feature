@@ -6,10 +6,11 @@ Característica: Consultar la explicación de una evaluación
 
   # API responsable: evaluation-query-api. Esta historia explica una evaluación ya registrada; no duplica el
   # motor de scoring de scoring-api ni lo vuelve a ejecutar.
-  # Estado (2026-10-18): implementada en evaluation-query-api sobre el esquema actual de scoring-api (V1–V9),
-  # verificada por ConsultasEvaluacionIntegracionTest (H2) y EsquemaScoringContratoIT (PostgreSQL, esquema
-  # temporal). Pendiente: el 409 para evaluaciones PENDIENTE (P-HU13-02), que depende del estado de la saga
-  # (V11 de scoring-api, no aplicada); la medición de CA10 en un entorno representativo.
+  # Estado (2026-10-18): implementada en evaluation-query-api sobre el esquema de scoring-api con la saga
+  # (V1–V11), incluido el 409 para evaluaciones PENDIENTE (P-HU13-02). Verificada por
+  # ConsultasEvaluacionIntegracionTest y RecomendacionesIntegracionTest (H2), EsquemaScoringContratoIT
+  # (PostgreSQL, esquema temporal) y el flujo de extremo a extremo con las tres API. V11 no está aplicada en
+  # motor_scoring. Pendiente: la medición de CA10 en un entorno representativo.
   #
   # Criterios originales (texto sin cambios):
   #   CA01. Permitir consultar una evaluación por su identificador.
@@ -42,8 +43,8 @@ Característica: Consultar la explicación de una evaluación
   #
   # Decisiones aprobadas el 2026-10-18 (se aprobaron las propuestas siguientes tal como estaban redactadas):
   # - P-HU13-01. Ruta: GET /api/v1/evaluaciones/{idEvaluacion}/explicacion (implementada).
-  # - P-HU13-02. Evaluación PENDIENTE: 409 con el código EVALUACION_PENDIENTE (igual que P-HU14-03). Pendiente
-  #   de implementación: requiere el estado de la saga (V11).
+  # - P-HU13-02. Evaluación PENDIENTE: 409 con el código EVALUACION_PENDIENTE (igual que P-HU14-03).
+  #   Implementado.
   # - P-HU13-03. CA03: las reglas de scoring se editan sin número de versión; la versión histórica disponible
   #   es la instantánea persistida en cada detalle. Propuesta: considerarla la versión histórica de la regla.
   #   Si se exige un identificador de versión, hace falta una decisión y un cambio de modelo en scoring-api.
@@ -117,7 +118,7 @@ Característica: Consultar la explicación de una evaluación
     Entonces la respuesta devuelve el mismo X-Trace-Id
     Y las respuestas de error incluyen ese traceId
 
-  @aprobado @pendiente-de-implementacion
+  @aprobado
   Escenario: Explicación de una evaluación PENDIENTE (P-HU13-02, requiere V11)
     Dado una evaluación PENDIENTE
     Cuando un usuario autorizado consulta su explicación

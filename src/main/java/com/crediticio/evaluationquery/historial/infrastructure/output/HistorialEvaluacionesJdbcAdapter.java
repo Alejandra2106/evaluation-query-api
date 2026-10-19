@@ -12,7 +12,8 @@ import java.util.List;
 
 /**
  * Lee con SELECT las tablas de scoring-api. De solicitante solo consulta el identificador (CA13); la suma de
- * los detalles solo se usa como puntaje derivado de las evaluaciones anteriores a HU12 (P-HU15-01).
+ * los detalles solo se usa como puntaje derivado de las evaluaciones anteriores a HU12 (P-HU15-01). Excluye
+ * las evaluaciones PENDIENTE de la saga de HU14 (CA08); incluye las COMPLETADA y las anteriores a la saga.
  */
 @Component
 public class HistorialEvaluacionesJdbcAdapter implements SolicitanteExistenciaPort, HistorialEvaluacionesPort {
@@ -21,13 +22,15 @@ public class HistorialEvaluacionesJdbcAdapter implements SolicitanteExistenciaPo
             "SELECT COUNT(*) FROM solicitante WHERE id_solicitante = :idSolicitante";
 
     private static final String CONSULTA_HISTORIAL = """
-            SELECT e.id_evaluacion, e.fecha_evaluacion, e.score_total, e.categoria, p.version AS version_politica,
+            SELECT e.id_evaluacion, e.fecha_evaluacion, e.score_total, e.categoria, e.estado,
+                   p.version AS version_politica,
                    COALESCE(SUM(d.puntaje_obtenido), 0) AS suma_detalles
             FROM evaluacion e
             LEFT JOIN politica_clasificacion p ON p.id_politica = e.id_politica
             LEFT JOIN detalle_evaluacion d ON d.id_evaluacion = e.id_evaluacion
             WHERE e.id_solicitante = :idSolicitante
-            GROUP BY e.id_evaluacion, e.fecha_evaluacion, e.score_total, e.categoria, p.version
+              AND (e.estado IS NULL OR e.estado <> 'PENDIENTE')
+            GROUP BY e.id_evaluacion, e.fecha_evaluacion, e.score_total, e.categoria, e.estado, p.version
             ORDER BY e.fecha_evaluacion DESC, e.id_evaluacion DESC
             """;
 
@@ -52,7 +55,8 @@ public class HistorialEvaluacionesJdbcAdapter implements SolicitanteExistenciaPo
                         fila.getObject("score_total", Integer.class),
                         fila.getInt("suma_detalles"),
                         fila.getString("categoria"),
-                        fila.getObject("version_politica", Integer.class)));
+                        fila.getObject("version_politica", Integer.class),
+                        fila.getString("estado")));
     }
 
     private static MapSqlParameterSource parametros(long idSolicitante) {

@@ -15,7 +15,7 @@ class EvaluacionHistoricaTest {
     @Test
     void conPuntajeAlmacenadoDebeUsarloSinRecalcular() {
         // la suma de los detalles no se usa cuando hay puntaje persistido
-        EvaluacionHistorica evaluacion = EvaluacionHistorica.reconstruir(5, FECHA, -20, 999, "MEDIO", 2);
+        EvaluacionHistorica evaluacion = EvaluacionHistorica.reconstruir(5, FECHA, -20, 999, "MEDIO", 2, "COMPLETADA");
 
         assertThat(evaluacion.getScoreTotal()).isEqualTo(-20);
         assertThat(evaluacion.getOrigenPuntaje()).isEqualTo(OrigenPuntaje.PERSISTIDO);
@@ -25,7 +25,7 @@ class EvaluacionHistoricaTest {
 
     @Test
     void unaEvaluacionAnteriorAHu12DebeMostrarLaSumaComoPuntajeDerivado() {
-        EvaluacionHistorica evaluacion = EvaluacionHistorica.reconstruir(5, FECHA, null, 20, null, null);
+        EvaluacionHistorica evaluacion = EvaluacionHistorica.reconstruir(5, FECHA, null, 20, null, null, null);
 
         assertThat(evaluacion.getScoreTotal()).isEqualTo(20);
         assertThat(evaluacion.getOrigenPuntaje()).isEqualTo(OrigenPuntaje.DERIVADO_DE_DETALLES);
@@ -35,7 +35,7 @@ class EvaluacionHistoricaTest {
 
     @Test
     void unaClasificacionPersistidaIncompletaDebeRechazarse() {
-        assertThatThrownBy(() -> EvaluacionHistorica.reconstruir(5, FECHA, 10, 10, null, null))
+        assertThatThrownBy(() -> EvaluacionHistorica.reconstruir(5, FECHA, 10, 10, null, null, null))
                 .isInstanceOf(IllegalStateException.class);
     }
 }

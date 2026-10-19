@@ -5,10 +5,14 @@ Característica: Generar y consultar recomendaciones
   Para identificar acciones que puedan ayudar a mejorar el perfil de riesgo del solicitante
 
   # API responsable: evaluation-query-api, coordinada con scoring-api mediante la saga aprobada.
-  # Este documento especifica requisitos; no declara la historia implementada. Estado al 2026-10-18: no
-  # implementada en ninguna API. La migración V11 de scoring-api (estado de la evaluación y outbox) es una
-  # propuesta en database/propuestas/hu14/, no promovida ni aplicada en ninguna base; su prueba de
-  # integración pasó (30 pruebas) solo en un esquema temporal de motor_scoring_it.
+  # Estado (2026-10-18): implementada. scoring-api: saga con V11 promovida (estado y outbox), intento en línea
+  # y reenvío programado. evaluation-query-api: generación interna idempotente con el token de servicio S1,
+  # consulta, esquema propio con su V1 y catálogo en JSON. Verificada con pruebas unitarias y de integración
+  # (H2), EsquemaScoringContratoIT y TrabajoRecomendacionAdapterIT (PostgreSQL, esquemas temporales) y un flujo
+  # de extremo a extremo con las tres API en motor_scoring_it, con un catálogo APROBADO solo de prueba.
+  # V10 y V11 no están aplicadas en motor_scoring. El catálogo incluido es un BORRADOR (P-HU14-01): con él no
+  # se genera ninguna recomendación. P-HU14-02 a P-HU14-06 y P-HU14-08 se implementaron tal como están
+  # propuestos y siguen pendientes de confirmación formal.
   #
   # Criterios originales (texto sin cambios):
   #   CA01. Generar las recomendaciones durante el proceso de evaluación, no durante la primera consulta.
@@ -70,11 +74,12 @@ Característica: Generar y consultar recomendaciones
   # - P-HU14-04. Respuesta para evaluaciones anteriores a la saga: propuesta 200 con lista vacía y
   #   generadas: false.
   # - P-HU14-05. Rutas: propuestas GET /api/v1/evaluaciones/{idEvaluacion}/recomendaciones (consulta) y
-  #   PUT /internal/v1/evaluaciones/{idEvaluacion}/recomendaciones (generación interna, idempotente), ambas
-  #   pendientes de implementación.
+  #   PUT /internal/v1/evaluaciones/{idEvaluacion}/recomendaciones (generación interna, idempotente).
+  #   Implementadas tal como se proponen.
   # - P-HU14-06. Persistencia en evaluation-query-api (esquema propio, cabecera de generación y
   #   recomendaciones) y dependencias de acceso a datos: pendientes de justificación y aprobación (CA17).
-  # - P-HU14-07. Valores de la identidad de servicio y de la política de reintentos (propuestos, no aprobados).
+  # - P-HU14-07. Valores de la identidad de servicio y de la política de reintentos: aprobados el 2026-10-18 e
+  #   implementados.
   # - P-HU14-08. Códigos de error propuestos: EVALUACION_NO_ENCONTRADA (404) y EVALUACION_PENDIENTE (409),
   #   sujetos a verificar su compatibilidad con el contrato común de errores.
   #

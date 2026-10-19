@@ -1,0 +1,11 @@
+{
+  "version": "PRUEBA-1",
+  "estado": "APROBADO",
+  "nota": "Solo para pruebas automatizadas. No es el catálogo del negocio ni representa su aprobación (P-HU14-01).",
+  "entradas": [
+    { "codigo": "PRUEBA-CAT-MEDIO", "tipoActivacion": "CATEGORIA", "categoria": "MEDIO",
+      "texto": "Texto de prueba para la categoría MEDIO." },
+    { "codigo": "PRUEBA-MORAS", "tipoActivacion": "FACTOR_DESFAVORABLE", "variable": "NUMERO_MORAS",
+      "texto": "Texto de prueba para moras." }
+  ]
+}

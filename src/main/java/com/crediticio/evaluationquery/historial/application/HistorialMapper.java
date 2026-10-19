@@ -10,6 +10,9 @@ public class HistorialMapper {
     /** Ruta de la explicación (HU13, P-HU13-01). */
     static final String RUTA_EXPLICACION = "/api/v1/evaluaciones/%d/explicacion";
 
+    /** Ruta de las recomendaciones (HU14, P-HU14-05). */
+    static final String RUTA_RECOMENDACIONES = "/api/v1/evaluaciones/%d/recomendaciones";
+
     public EvaluacionHistorialResponse aResponse(EvaluacionHistorica evaluacion) {
         return new EvaluacionHistorialResponse(
                 evaluacion.getIdEvaluacion(),
@@ -19,6 +22,8 @@ public class HistorialMapper {
                 evaluacion.isClasificada(),
                 evaluacion.getCategoria(),
                 evaluacion.getVersionPolitica(),
-                RUTA_EXPLICACION.formatted(evaluacion.getIdEvaluacion()));
+                evaluacion.getEstado(),
+                RUTA_EXPLICACION.formatted(evaluacion.getIdEvaluacion()),
+                RUTA_RECOMENDACIONES.formatted(evaluacion.getIdEvaluacion()));
     }
 }

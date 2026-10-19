@@ -57,6 +57,14 @@ public final class DatosScoringPrueba {
                 categoria, idPolitica);
     }
 
+    /** Evaluación de la saga de HU14 (PENDIENTE o COMPLETADA). En PostgreSQL, V11 exige además su trabajo. */
+    public long evaluacionConEstado(long idSolicitante, LocalDateTime fecha, int scoreTotal, String categoria,
+            long idPolitica, String estado) {
+        return insertar("INSERT INTO evaluacion (id_solicitante, fecha_evaluacion, score_total, categoria, id_politica, "
+                + "estado) VALUES (?, ?, ?, ?, ?, ?)", "id_evaluacion", idSolicitante, Timestamp.valueOf(fecha),
+                scoreTotal, categoria, idPolitica, estado);
+    }
+
     public long detalle(long idEvaluacion, long idRegla, String operador, String valorCondicion, int puntajeRegla,
             boolean condicionCumplida, int puntajeObtenido) {
         return insertar("INSERT INTO detalle_evaluacion (id_evaluacion, id_regla, operador_aplicado, "
@@ -65,9 +73,10 @@ public final class DatosScoringPrueba {
                 valorCondicion, puntajeRegla, condicionCumplida, puntajeObtenido);
     }
 
-    /** Solo H2: vacía las tablas en orden de dependencias. */
+    /** Solo H2 (sin los triggers de inmutabilidad): vacía las tablas en orden de dependencias. */
     public void vaciar() {
-        for (String tabla : new String[] {"detalle_evaluacion", "evaluacion", "politica_clasificacion",
+        for (String tabla : new String[] {"consulta.recomendacion_evaluacion", "consulta.generacion_recomendaciones",
+                "detalle_evaluacion", "evaluacion", "politica_clasificacion",
                 "regla_scoring", "riesgo", "solicitante"}) {
             jdbcTemplate.update("DELETE FROM " + tabla);
         }
