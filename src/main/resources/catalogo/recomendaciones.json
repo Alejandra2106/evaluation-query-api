@@ -1,0 +1,21 @@
+{
+  "version": "1",
+  "estado": "APROBADO",
+  "nota": "Aprobado por María Alejandra el 2026-10-19 sin cambios respecto de BORRADOR-1 (P-HU14-01). Ningún texto implica aprobar ni rechazar el crédito. Cualquier cambio de texto o criterio exige una versión nueva aprobada; las recomendaciones ya generadas conservan su texto y su versión.",
+  "entradas": [
+    { "codigo": "REC-CAT-ALTO-01", "tipoActivacion": "CATEGORIA", "categoria": "ALTO",
+      "texto": "Se sugiere un análisis manual ampliado del caso." },
+    { "codigo": "REC-CAT-MEDIO-01", "tipoActivacion": "CATEGORIA", "categoria": "MEDIO",
+      "texto": "Se sugiere validar los factores desfavorables antes de continuar con el análisis." },
+    { "codigo": "REC-MORAS-01", "tipoActivacion": "FACTOR_DESFAVORABLE", "variable": "NUMERO_MORAS",
+      "texto": "Revisar con el solicitante el origen de las moras registradas y su plan de regularización." },
+    { "codigo": "REC-ENDEUD-01", "tipoActivacion": "FACTOR_DESFAVORABLE", "variable": "NIVEL_ENDEUDAMIENTO",
+      "texto": "Analizar la relación entre deudas e ingresos y la capacidad de pago." },
+    { "codigo": "REC-INGRESOS-01", "tipoActivacion": "FACTOR_DESFAVORABLE", "variable": "INGRESOS_MENSUALES",
+      "texto": "Verificar la estabilidad y la documentación de los ingresos declarados." },
+    { "codigo": "REC-HISTORIAL-01", "tipoActivacion": "FACTOR_DESFAVORABLE", "variable": "HISTORIAL_CREDITICIO",
+      "texto": "Revisar el historial crediticio para identificar incumplimientos recurrentes." },
+    { "codigo": "REC-ANTIG-01", "tipoActivacion": "FACTOR_DESFAVORABLE", "variable": "ANTIGUEDAD_LABORAL",
+      "texto": "Confirmar la situación laboral actual y su continuidad." }
+  ]
+}

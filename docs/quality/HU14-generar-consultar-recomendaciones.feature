@@ -5,10 +5,14 @@ Característica: Generar y consultar recomendaciones
   Para identificar acciones que puedan ayudar a mejorar el perfil de riesgo del solicitante
 
   # API responsable: evaluation-query-api, coordinada con scoring-api mediante la saga aprobada.
-  # Este documento especifica requisitos; no declara la historia implementada. Estado al 2026-10-18: no
-  # implementada en ninguna API. La migración V11 de scoring-api (estado de la evaluación y outbox) es una
-  # propuesta en database/propuestas/hu14/, no promovida ni aplicada en ninguna base; su prueba de
-  # integración pasó (30 pruebas) solo en un esquema temporal de motor_scoring_it.
+  # Estado (2026-10-18): implementada. scoring-api: saga con V11 promovida (estado y outbox), intento en línea
+  # y reenvío programado. evaluation-query-api: generación interna idempotente con el token de servicio S1,
+  # consulta, esquema propio con su V1 y catálogo en JSON. Verificada con pruebas unitarias y de integración
+  # (H2), EsquemaScoringContratoIT y TrabajoRecomendacionAdapterIT (PostgreSQL, esquemas temporales) y un flujo
+  # de extremo a extremo con las tres API en motor_scoring_it, con un catálogo APROBADO solo de prueba.
+  # El catálogo incluido es la versión 1, aprobada el 2026-10-19 (P-HU14-01); la definición de factor
+  # desfavorable está confirmada (P-HU14-02). P-HU14-03 a P-HU14-06 y P-HU14-08 se implementaron tal como
+  # están propuestos y siguen pendientes de confirmación formal.
   #
   # Criterios originales (texto sin cambios):
   #   CA01. Generar las recomendaciones durante el proceso de evaluación, no durante la primera consulta.
@@ -61,20 +65,21 @@ Característica: Generar y consultar recomendaciones
   #   catálogo aprobado; S1 como mecanismo preferido de identidad de servicio.
   #
   # Decisiones pendientes de aprobación (no se inventa una regla):
-  # - P-HU14-01. Contenido del catálogo (códigos, textos, criterios de activación y versión). El borrador
-  #   existente no está aprobado por el negocio.
-  # - P-HU14-02. Definición de factor desfavorable (CA02). Borrador: condición cumplida con contribución
-  #   negativa; una condición incumplida no es por sí misma un factor desfavorable.
+  # - P-HU14-01. Contenido del catálogo: APROBADO el 2026-10-19 por María Alejandra, sin cambios respecto de
+  #   BORRADOR-1, como versión 1.
+  # - P-HU14-02. Definición de factor desfavorable (CA02): CONFIRMADA el 2026-10-19: condición cumplida con
+  #   contribución negativa; una condición incumplida no es por sí misma un factor desfavorable.
   # - P-HU14-03. Respuesta cuando la evaluación está PENDIENTE: propuesta 409 con el código
   #   EVALUACION_PENDIENTE.
   # - P-HU14-04. Respuesta para evaluaciones anteriores a la saga: propuesta 200 con lista vacía y
   #   generadas: false.
   # - P-HU14-05. Rutas: propuestas GET /api/v1/evaluaciones/{idEvaluacion}/recomendaciones (consulta) y
-  #   PUT /internal/v1/evaluaciones/{idEvaluacion}/recomendaciones (generación interna, idempotente), ambas
-  #   pendientes de implementación.
+  #   PUT /internal/v1/evaluaciones/{idEvaluacion}/recomendaciones (generación interna, idempotente).
+  #   Implementadas tal como se proponen.
   # - P-HU14-06. Persistencia en evaluation-query-api (esquema propio, cabecera de generación y
   #   recomendaciones) y dependencias de acceso a datos: pendientes de justificación y aprobación (CA17).
-  # - P-HU14-07. Valores de la identidad de servicio y de la política de reintentos (propuestos, no aprobados).
+  # - P-HU14-07. Valores de la identidad de servicio y de la política de reintentos: aprobados el 2026-10-18 e
+  #   implementados.
   # - P-HU14-08. Códigos de error propuestos: EVALUACION_NO_ENCONTRADA (404) y EVALUACION_PENDIENTE (409),
   #   sujetos a verificar su compatibilidad con el contrato común de errores.
   #

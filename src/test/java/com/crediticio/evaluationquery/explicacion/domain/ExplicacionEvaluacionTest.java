@@ -19,7 +19,7 @@ class ExplicacionEvaluacionTest {
 
     @Test
     void conPuntajeAlmacenadoCoincidenteDebeUsarloComoPersistido() {
-        ExplicacionEvaluacion explicacion = ExplicacionEvaluacion.reconstruir(7, FECHA, -20, "MEDIO", 1,
+        ExplicacionEvaluacion explicacion = ExplicacionEvaluacion.reconstruir(7, FECHA, -20, "MEDIO", 1, null,
                 List.of(CUMPLIDA_NEGATIVA, NO_CUMPLIDA));
 
         assertThat(explicacion.getScoreTotal()).isEqualTo(-20);
@@ -30,7 +30,7 @@ class ExplicacionEvaluacionTest {
 
     @Test
     void unaEvaluacionSinReglasAplicadasDebeTenerPuntajeCero() {
-        ExplicacionEvaluacion explicacion = ExplicacionEvaluacion.reconstruir(7, FECHA, 0, "BAJO", 1, List.of());
+        ExplicacionEvaluacion explicacion = ExplicacionEvaluacion.reconstruir(7, FECHA, 0, "BAJO", 1, null, List.of());
 
         assertThat(explicacion.getScoreTotal()).isZero();
         assertThat(explicacion.getFactores()).isEmpty();
@@ -38,7 +38,7 @@ class ExplicacionEvaluacionTest {
 
     @Test
     void siLaSumaNoCoincideConElPuntajeAlmacenadoDebeSerInconsistente() {
-        assertThatThrownBy(() -> ExplicacionEvaluacion.reconstruir(7, FECHA, 15, "BAJO", 1, List.of(CUMPLIDA_NEGATIVA)))
+        assertThatThrownBy(() -> ExplicacionEvaluacion.reconstruir(7, FECHA, 15, "BAJO", 1, null, List.of(CUMPLIDA_NEGATIVA)))
                 .isInstanceOf(ExplicacionInconsistenteException.class)
                 .hasMessageContaining("evaluación 7")
                 .hasMessageContaining("(-20)")
@@ -47,15 +47,15 @@ class ExplicacionEvaluacionTest {
 
     @Test
     void unaClasificacionPersistidaIncompletaDebeSerInconsistente() {
-        assertThatThrownBy(() -> ExplicacionEvaluacion.reconstruir(7, FECHA, -20, null, null, List.of(CUMPLIDA_NEGATIVA)))
+        assertThatThrownBy(() -> ExplicacionEvaluacion.reconstruir(7, FECHA, -20, null, null, null, List.of(CUMPLIDA_NEGATIVA)))
                 .isInstanceOf(ExplicacionInconsistenteException.class);
-        assertThatThrownBy(() -> ExplicacionEvaluacion.reconstruir(7, FECHA, -20, "MEDIO", null, List.of(CUMPLIDA_NEGATIVA)))
+        assertThatThrownBy(() -> ExplicacionEvaluacion.reconstruir(7, FECHA, -20, "MEDIO", null, null, List.of(CUMPLIDA_NEGATIVA)))
                 .isInstanceOf(ExplicacionInconsistenteException.class);
     }
 
     @Test
     void unaEvaluacionAnteriorAHu12DebeMostrarElPuntajeDerivadoYSinClasificacion() {
-        ExplicacionEvaluacion explicacion = ExplicacionEvaluacion.reconstruir(3, FECHA, null, null, null,
+        ExplicacionEvaluacion explicacion = ExplicacionEvaluacion.reconstruir(3, FECHA, null, null, null, null,
                 List.of(CUMPLIDA_NEGATIVA, NO_CUMPLIDA));
 
         assertThat(explicacion.getScoreTotal()).isEqualTo(-20);

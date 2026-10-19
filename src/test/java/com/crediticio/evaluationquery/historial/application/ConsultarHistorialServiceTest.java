@@ -41,16 +41,19 @@ class ConsultarHistorialServiceTest {
     }
 
     @Test
-    void debeConservarElOrdenDelPuertoYEnlazarLaExplicacion() {
+    void debeConservarElOrdenDelPuertoYEnlazarLaExplicacionYLasRecomendaciones() {
         ConsultarHistorialService servicio = new ConsultarHistorialService(id -> true, id -> List.of(
-                EvaluacionHistorica.reconstruir(9, FECHA, 0, 0, "BAJO", 1),
-                EvaluacionHistorica.reconstruir(2, FECHA.minusDays(3), null, 20, null, null)),
+                EvaluacionHistorica.reconstruir(9, FECHA, 0, 0, "BAJO", 1, "COMPLETADA"),
+                EvaluacionHistorica.reconstruir(2, FECHA.minusDays(3), null, 20, null, null, null)),
                 new HistorialMapper());
 
         List<EvaluacionHistorialResponse> respuesta = servicio.consultar(4);
 
         assertThat(respuesta).extracting(EvaluacionHistorialResponse::idEvaluacion).containsExactly(9L, 2L);
         assertThat(respuesta.get(0).explicacion()).isEqualTo("/api/v1/evaluaciones/9/explicacion");
+        assertThat(respuesta.get(0).recomendaciones()).isEqualTo("/api/v1/evaluaciones/9/recomendaciones");
+        assertThat(respuesta.get(0).estado()).isEqualTo("COMPLETADA");
+        assertThat(respuesta.get(1).estado()).isNull();
         assertThat(respuesta.get(1).origenPuntaje()).isEqualTo("DERIVADO_DE_DETALLES");
         assertThat(respuesta.get(1).clasificada()).isFalse();
     }

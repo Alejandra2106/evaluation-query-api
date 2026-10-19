@@ -26,6 +26,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -113,6 +114,17 @@ class SeguridadIntegracionTest {
                 .andReturn();
 
         traceIdDelCuerpoIgualAlDeLaCabecera(resultado);
+    }
+
+    /** HU14: con la saga deshabilitada (por defecto) la operación interna no existe y ningún token la autoriza. */
+    @Test
+    void conLaSagaDeshabilitadaLaGeneracionInternaDebeDenegarse() throws Exception {
+        mockMvc.perform(put("/internal/v1/evaluaciones/1/recomendaciones"))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(put("/internal/v1/evaluaciones/1/recomendaciones")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(JwtConfig.ROL_ADMINISTRADOR)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.errorCode").value("ACCESO_DENEGADO"));
     }
 
     @Test

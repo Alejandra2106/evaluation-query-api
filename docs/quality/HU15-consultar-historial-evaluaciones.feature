@@ -5,11 +5,11 @@ Característica: Consultar el historial de evaluaciones de un solicitante
   Para revisar la evolución de sus resultados a lo largo del tiempo
 
   # API responsable: evaluation-query-api.
-  # Estado (2026-10-18): implementada en evaluation-query-api sobre el esquema actual de scoring-api (V1–V9),
-  # verificada por ConsultasEvaluacionIntegracionTest (H2) y EsquemaScoringContratoIT (PostgreSQL, esquema
-  # temporal). Pendientes: CA08 (exclusión de las PENDIENTE) y el campo estado, que dependen del estado de la
-  # saga (V11 de scoring-api, no aplicada; hoy no existen evaluaciones PENDIENTE); la referencia a las
-  # recomendaciones de CA09, que depende de HU14; la medición de CA12 en un entorno representativo.
+  # Estado (2026-10-18): implementada en evaluation-query-api sobre el esquema de scoring-api con la saga
+  # (V1–V11), incluidos CA08 (exclusión de las PENDIENTE), el campo estado y la referencia a las
+  # recomendaciones de CA09. Verificada por ConsultasEvaluacionIntegracionTest y RecomendacionesIntegracionTest
+  # (H2), EsquemaScoringContratoIT (PostgreSQL, esquema temporal) y el flujo de extremo a extremo con las tres
+  # API. V11 no está aplicada en motor_scoring. Pendiente: la medición de CA12 en un entorno representativo.
   #
   # Criterios originales (texto sin cambios):
   #   CA01. Permitir consultar el historial mediante el identificador del solicitante.
@@ -48,10 +48,9 @@ Característica: Consultar el historial de evaluaciones de un solicitante
   #   DERIVADO_DE_DETALLES), nunca como dato persistido originalmente. Implementado.
   # - P-HU15-02. Ruta: GET /api/v1/solicitantes/{idSolicitante}/evaluaciones. Implementada.
   # - P-HU15-03. Referencias de CA09: cada elemento incluye la ruta de la explicación de HU13 (campo
-  #   explicacion, implementado). La referencia a las recomendaciones se añadirá cuando HU14 esté
-  #   implementada: hoy no existe un contrato real al que enlazar.
-  # - P-HU15-04. Campos adicionales: clasificada, versionPolitica y origenPuntaje (implementados); estado
-  #   (pendiente de V11).
+  #   explicacion) y la de sus recomendaciones de HU14 (campo recomendaciones). Implementado.
+  # - P-HU15-04. Campos adicionales: clasificada, versionPolitica, origenPuntaje y estado (COMPLETADA, o null
+  #   en las anteriores a la saga). Implementados.
   # - P-HU15-05. Código de error del 404: SOLICITANTE_NO_ENCONTRADO, con el mismo formato ApiError que
   #   scoring-api. Implementado.
 
@@ -79,7 +78,6 @@ Característica: Consultar el historial de evaluaciones de un solicitante
     Cuando un usuario autorizado consulta su historial
     Entonces la respuesta es 200 con una lista vacía
 
-  @pendiente-de-implementacion
   Escenario: Las evaluaciones PENDIENTE no se presentan como completas (CA08, requiere V11)
     Dado un solicitante con una evaluación COMPLETADA y otra PENDIENTE
     Cuando un usuario autorizado consulta su historial
@@ -93,7 +91,6 @@ Característica: Consultar el historial de evaluaciones de un solicitante
 
   Escenario: Acceso al detalle y a las recomendaciones (CA09)
     Cuando un usuario autorizado consulta el historial de un solicitante
-    # Implementada la referencia a la explicación; la de las recomendaciones queda pendiente de HU14.
     Entonces cada evaluación incluye la referencia para consultar su explicación (HU13) y sus recomendaciones (HU14)
     Y el historial no incluye detalles por regla ni recomendaciones
 

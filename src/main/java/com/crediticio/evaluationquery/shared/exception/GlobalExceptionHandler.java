@@ -3,6 +3,9 @@ package com.crediticio.evaluationquery.shared.exception;
 import com.crediticio.evaluationquery.explicacion.domain.EvaluacionNoEncontradaException;
 import com.crediticio.evaluationquery.explicacion.domain.ExplicacionInconsistenteException;
 import com.crediticio.evaluationquery.historial.domain.SolicitanteNoEncontradoException;
+import com.crediticio.evaluationquery.recomendaciones.domain.CatalogoNoDisponibleException;
+import com.crediticio.evaluationquery.recomendaciones.domain.EvaluacionInexistenteException;
+import com.crediticio.evaluationquery.recomendaciones.domain.EvaluacionNoPendienteException;
 import com.crediticio.evaluationquery.shared.response.ApiError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +21,8 @@ import java.util.List;
 /**
  * Errores de negocio con el formato ApiError y el traceId de X-Trace-Id (contrato común de las tres API).
  * Los códigos EVALUACION_NO_ENCONTRADA y SOLICITANTE_NO_ENCONTRADO son los de scoring-api (P-HU13-07,
- * P-HU15-05). Las respuestas 401 y 403 las escribe RespuestaSeguridadJson.
+ * P-HU15-05); EVALUACION_PENDIENTE, EVALUACION_NO_PENDIENTE y CATALOGO_NO_DISPONIBLE son los de la saga de
+ * HU14 (P-HU13-02, P-HU14-03, P-HU14-08). Las respuestas 401 y 403 las escribe RespuestaSeguridadJson.
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -29,6 +33,34 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> manejarEvaluacionNoEncontrada(EvaluacionNoEncontradaException ex) {
         log.warn("Consulta de una evaluación que no existe");
         return construirRespuesta(HttpStatus.NOT_FOUND, "EVALUACION_NO_ENCONTRADA", ex.getMessage());
+    }
+
+    @ExceptionHandler(EvaluacionInexistenteException.class)
+    public ResponseEntity<ApiError> manejarEvaluacionInexistente(EvaluacionInexistenteException ex) {
+        log.warn("Recomendaciones de una evaluación que no existe");
+        return construirRespuesta(HttpStatus.NOT_FOUND, "EVALUACION_NO_ENCONTRADA", ex.getMessage());
+    }
+
+    /** La evaluación sigue PENDIENTE en la saga: todavía no es una evaluación completa (HU14 CA13). */
+    @ExceptionHandler(EvaluacionPendienteException.class)
+    public ResponseEntity<ApiError> manejarEvaluacionPendiente(EvaluacionPendienteException ex) {
+        log.info("Consulta de una evaluación pendiente");
+        return construirRespuesta(HttpStatus.CONFLICT, "EVALUACION_PENDIENTE", ex.getMessage());
+    }
+
+    /** Generación interna para una evaluación que no está PENDIENTE (anterior a la saga): rechazo permanente. */
+    @ExceptionHandler(EvaluacionNoPendienteException.class)
+    public ResponseEntity<ApiError> manejarEvaluacionNoPendiente(EvaluacionNoPendienteException ex) {
+        log.warn("Generación de recomendaciones rechazada: la evaluación no está pendiente");
+        return construirRespuesta(HttpStatus.CONFLICT, "EVALUACION_NO_PENDIENTE", ex.getMessage());
+    }
+
+    /** Sin un catálogo APROBADO no se generan recomendaciones; la saga lo trata como transitorio y reintenta. */
+    @ExceptionHandler(CatalogoNoDisponibleException.class)
+    public ResponseEntity<ApiError> manejarCatalogoNoDisponible(CatalogoNoDisponibleException ex) {
+        log.warn(ex.getMessage());
+        return construirRespuesta(HttpStatus.SERVICE_UNAVAILABLE, "CATALOGO_NO_DISPONIBLE",
+                "El catálogo de recomendaciones no está disponible");
     }
 
     @ExceptionHandler(SolicitanteNoEncontradoException.class)

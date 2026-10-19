@@ -20,7 +20,8 @@ import java.util.Optional;
 public class ExplicacionEvaluacionJdbcAdapter implements ExplicacionEvaluacionConsultaPort {
 
     private static final String CONSULTA_EVALUACION = """
-            SELECT e.id_evaluacion, e.fecha_evaluacion, e.score_total, e.categoria, p.version AS version_politica
+            SELECT e.id_evaluacion, e.fecha_evaluacion, e.score_total, e.categoria, e.estado,
+                   p.version AS version_politica
             FROM evaluacion e
             LEFT JOIN politica_clasificacion p ON p.id_politica = e.id_politica
             WHERE e.id_evaluacion = :idEvaluacion
@@ -51,7 +52,8 @@ public class ExplicacionEvaluacionJdbcAdapter implements ExplicacionEvaluacionCo
                         fila.getObject("fecha_evaluacion", LocalDateTime.class),
                         fila.getObject("score_total", Integer.class),
                         fila.getString("categoria"),
-                        fila.getObject("version_politica", Integer.class)));
+                        fila.getObject("version_politica", Integer.class),
+                        fila.getString("estado")));
         if (evaluaciones.isEmpty()) {
             return Optional.empty();
         }
@@ -66,10 +68,10 @@ public class ExplicacionEvaluacionJdbcAdapter implements ExplicacionEvaluacionCo
                         fila.getInt("puntaje_obtenido")));
         DatosEvaluacion datos = evaluaciones.get(0);
         return Optional.of(ExplicacionEvaluacion.reconstruir(datos.idEvaluacion(), datos.fechaEvaluacion(),
-                datos.scoreTotal(), datos.categoria(), datos.versionPolitica(), factores));
+                datos.scoreTotal(), datos.categoria(), datos.versionPolitica(), datos.estado(), factores));
     }
 
     private record DatosEvaluacion(long idEvaluacion, LocalDateTime fechaEvaluacion, Integer scoreTotal,
-            String categoria, Integer versionPolitica) {
+            String categoria, Integer versionPolitica, String estado) {
     }
 }

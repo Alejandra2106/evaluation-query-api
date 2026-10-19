@@ -6,10 +6,19 @@ import com.crediticio.evaluationquery.explicacion.domain.OrigenPuntaje;
 import com.crediticio.evaluationquery.explicacion.infrastructure.output.ExplicacionEvaluacionJdbcAdapter;
 import com.crediticio.evaluationquery.historial.domain.EvaluacionHistorica;
 import com.crediticio.evaluationquery.historial.infrastructure.output.HistorialEvaluacionesJdbcAdapter;
+import com.crediticio.evaluationquery.recomendaciones.domain.EvaluacionParaRecomendar;
+import com.crediticio.evaluationquery.recomendaciones.domain.FactorEvaluado;
+import com.crediticio.evaluationquery.recomendaciones.domain.GeneracionConcurrenteException;
+import com.crediticio.evaluationquery.recomendaciones.domain.GeneracionRecomendaciones;
+import com.crediticio.evaluationquery.recomendaciones.domain.RecomendacionGenerada;
+import com.crediticio.evaluationquery.recomendaciones.domain.TipoActivacion;
+import com.crediticio.evaluationquery.recomendaciones.infrastructure.output.EvaluacionParaRecomendarJdbcAdapter;
+import com.crediticio.evaluationquery.recomendaciones.infrastructure.output.RecomendacionesJdbcAdapter;
 import com.crediticio.evaluationquery.support.DatosScoringPrueba;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -29,18 +38,23 @@ import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Contrato de lectura de HU13 y HU15 contra el esquema real de scoring-api en PostgreSQL. En un esquema
- * temporal y aislado aplica las migraciones V1–V9 de scoring-api (leídas de
- * ../scoring-api/src/main/resources/db/migration, sin modificarlas, sustituyendo el placeholder
- * ${flyway:defaultSchema}); inserta una evaluación anterior a HU12 antes de V8 y evaluaciones clasificadas
- * después (respetando los triggers de V8), y ejecuta los adaptadores JDBC de esta API dentro de transacciones
- * de solo lectura. No toca el esquema public ni sus datos.
+ * Contrato de HU13, HU14 y HU15 contra el esquema real de scoring-api en PostgreSQL. En un esquema temporal y
+ * aislado aplica las migraciones V1–V11 de scoring-api (leídas de ../scoring-api/src/main/resources/db/migration,
+ * sin modificarlas, sustituyendo el placeholder ${flyway:defaultSchema}) y la migración V1 propia de esta API;
+ * inserta una evaluación anterior a HU12 antes de V8, evaluaciones clasificadas después (respetando los triggers
+ * de V8) y una evaluación PENDIENTE con su trabajo después de V11 (respetando sus triggers). Ejecuta los
+ * adaptadores de lectura dentro de transacciones de solo lectura, y el de recomendaciones con inserciones
+ * reales, concurrencia y los triggers de inmutabilidad. No toca el esquema public ni sus datos.
  *
  * Antes de abrir cualquier conexión exige, por igualdad exacta de texto, -Dit.base-dedicada=motor_scoring_it y
  * -Dspring.datasource.url=jdbc:postgresql://localhost:5432/motor_scoring_it (nunca usa variables de la
@@ -60,6 +74,8 @@ class EsquemaScoringContratoIT {
     private static final String URL_AUTORIZADA = "jdbc:postgresql://localhost:5432/" + BASE_AUTORIZADA;
     private static final Path MIGRACIONES_SCORING = Path.of("..", "scoring-api", "src", "main", "resources", "db",
             "migration");
+    private static final Path MIGRACION_PROPIA = Path.of("src", "main", "resources", "db", "migration",
+            "V1__crear_recomendaciones.sql");
     private static final LocalDateTime FECHA = LocalDateTime.of(2026, 10, 10, 10, 0);
 
     private static String url;
@@ -73,12 +89,15 @@ class EsquemaScoringContratoIT {
     private static TransactionTemplate soloLectura;
     private static ExplicacionEvaluacionJdbcAdapter explicacionAdapter;
     private static HistorialEvaluacionesJdbcAdapter historialAdapter;
+    private static EvaluacionParaRecomendarJdbcAdapter evaluacionParaRecomendarAdapter;
+    private static RecomendacionesJdbcAdapter recomendacionesAdapter;
 
     private static long idSolicitante;
     private static long idSolicitanteSinEvaluaciones;
     private static long idAnteriorAHu12;
     private static long idClasificada;
     private static long idMismaFecha;
+    private static long idPendiente;
 
     @BeforeAll
     static void prepararEsquemaConMigracionesDeScoring() throws Exception {
@@ -95,7 +114,7 @@ class EsquemaScoringContratoIT {
         }
         assertThat(usuario).as("DB_USERNAME").isNotBlank();
         assertThat(clave).as("DB_PASSWORD").isNotBlank();
-        assertThat(MIGRACIONES_SCORING.resolve("V9__proteger_inmutabilidad_politica_clasificacion.sql"))
+        assertThat(MIGRACIONES_SCORING.resolve("V11__saga_recomendaciones.sql"))
                 .as("migraciones de scoring-api en la carpeta hermana").exists();
 
         crearEsquemaPropio(base);
@@ -110,6 +129,8 @@ class EsquemaScoringContratoIT {
         NamedParameterJdbcTemplate consultas = new NamedParameterJdbcTemplate(dataSource);
         explicacionAdapter = new ExplicacionEvaluacionJdbcAdapter(consultas);
         historialAdapter = new HistorialEvaluacionesJdbcAdapter(consultas);
+        evaluacionParaRecomendarAdapter = new EvaluacionParaRecomendarJdbcAdapter(consultas);
+        recomendacionesAdapter = new RecomendacionesJdbcAdapter(consultas, ESQUEMA);
         DatosScoringPrueba datos = new DatosScoringPrueba(jdbcTemplate);
 
         aplicarMigraciones(1, 7);
@@ -139,6 +160,22 @@ class EsquemaScoringContratoIT {
         });
         // La regla se edita después de evaluar; la explicación debe mostrar la versión aplicada
         jdbcTemplate.update("UPDATE regla_scoring SET puntaje = -30, valor_condicion = '4' WHERE id_regla = ?", ids[2]);
+
+        aplicarMigraciones(10, 11);
+        aplicarMigracionPropia();
+        transaccion.executeWithoutResult(estado -> {
+            long politica = jdbcTemplate.queryForObject("SELECT max(id_politica) FROM politica_clasificacion",
+                    Long.class);
+            // V11: toda evaluación nueva nace PENDIENTE junto con su trabajo (concesión vigente, un intento)
+            idPendiente = datos.evaluacionConEstado(idSolicitante, FECHA.plusDays(1), -20, "MEDIO", politica,
+                    "PENDIENTE");
+            datos.detalle(idPendiente, ids[2], ">", "4", -30, false, 0);
+            datos.detalle(idPendiente, ids[3], ">=", "3000000", 20, false, 0);
+            datos.detalle(idPendiente, ids[2], ">", "1", -20, true, -20);
+            jdbcTemplate.update("INSERT INTO trabajo_recomendacion (id_evaluacion, intentos, intentos_totales, "
+                    + "proximo_intento, id_concesion, concesion_hasta) VALUES (?, 1, 1, clock_timestamp(), ?, "
+                    + "clock_timestamp() + interval '30 seconds')", idPendiente, UUID.randomUUID());
+        });
     }
 
     @AfterAll
@@ -225,6 +262,87 @@ class EsquemaScoringContratoIT {
         assertThat(enSoloLectura(() -> historialAdapter.existe(Long.MAX_VALUE))).isFalse();
     }
 
+    // ---- HU14 y estado de la saga (V11 de scoring-api y V1 propia) ----
+
+    @Test
+    void elHistorialExcluyeLaEvaluacionPendienteYLaExplicacionLaIdentifica() {
+        assertThat(enSoloLectura(() -> historialAdapter.listarPorSolicitante(idSolicitante)))
+                .extracting(EvaluacionHistorica::getIdEvaluacion).doesNotContain(idPendiente);
+        assertThat(enSoloLectura(() -> explicacionAdapter.buscarPorId(idPendiente)).orElseThrow().isPendiente())
+                .isTrue();
+        assertThat(enSoloLectura(() -> explicacionAdapter.buscarPorId(idClasificada)).orElseThrow().isPendiente())
+                .isFalse();
+    }
+
+    @Test
+    void laGeneracionLeeElEstadoLaClasificacionYLosFactoresPersistidos() {
+        EvaluacionParaRecomendar evaluacion = enSoloLectura(() -> evaluacionParaRecomendarAdapter.buscar(idPendiente))
+                .orElseThrow();
+
+        assertThat(evaluacion.esPendiente()).isTrue();
+        assertThat(evaluacion.categoria()).isEqualTo("MEDIO");
+        assertThat(evaluacion.factores()).containsExactly(
+                new FactorEvaluado("NUMERO_MORAS", false, 0),
+                new FactorEvaluado("INGRESOS_MENSUALES", false, 0),
+                new FactorEvaluado("NUMERO_MORAS", true, -20));
+        assertThat(enSoloLectura(() -> evaluacionParaRecomendarAdapter.buscar(idAnteriorAHu12)).orElseThrow()
+                .esAnteriorALaSaga()).isTrue();
+    }
+
+    @Test
+    void lasRecomendacionesSeGuardanUnaVezYSonInmutables() {
+        long id = 900_001L;
+        GeneracionRecomendaciones guardada = transaccion.execute(estado -> recomendacionesAdapter.guardar(
+                generacion(id, "V1", "Texto de la versión 1")));
+
+        assertThat(guardada.fechaGeneracion()).isNotNull();
+        assertThat(guardada.recomendaciones()).extracting(RecomendacionGenerada::codigo)
+                .containsExactly("REC-CAT-MEDIO-01", "REC-MORAS-01");
+        assertThatThrownBy(() -> transaccion.executeWithoutResult(estado -> recomendacionesAdapter.guardar(
+                generacion(id, "V2", "Otro texto")))).isInstanceOf(GeneracionConcurrenteException.class);
+        assertThatThrownBy(() -> jdbcTemplate.update("UPDATE recomendacion_evaluacion SET texto = 'x' "
+                + "WHERE id_evaluacion = ?", id)).isInstanceOf(DataAccessException.class)
+                .hasMessageContaining("inmutables");
+        assertThatThrownBy(() -> jdbcTemplate.update("DELETE FROM generacion_recomendaciones WHERE id_evaluacion = ?",
+                id)).isInstanceOf(DataAccessException.class).hasMessageContaining("inmutables");
+        assertThat(enSoloLectura(() -> recomendacionesAdapter.buscar(id)).orElseThrow().recomendaciones().get(1).texto())
+                .isEqualTo("Texto de la versión 1");
+    }
+
+    /** La segunda inserción espera a que confirme la primera y falla por clave duplicada, sin duplicar filas. */
+    @Test
+    void dosGeneracionesSimultaneasDeLaMismaEvaluacionGuardanSoloUna() throws Exception {
+        long id = 900_002L;
+        CountDownLatch primeraInsertada = new CountDownLatch(1);
+        CompletableFuture<Void> primera = CompletableFuture.runAsync(() -> transaccion.executeWithoutResult(estado -> {
+            recomendacionesAdapter.guardar(generacion(id, "V1", "Primera"));
+            primeraInsertada.countDown();
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+            }
+        }));
+        assertThat(primeraInsertada.await(10, TimeUnit.SECONDS)).isTrue();
+
+        assertThatThrownBy(() -> transaccion.executeWithoutResult(estado -> recomendacionesAdapter.guardar(
+                generacion(id, "V1", "Segunda")))).isInstanceOf(GeneracionConcurrenteException.class);
+        primera.get(10, TimeUnit.SECONDS);
+
+        assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM recomendacion_evaluacion WHERE id_evaluacion = ?",
+                Long.class, id)).isEqualTo(2L);
+        assertThat(enSoloLectura(() -> recomendacionesAdapter.buscar(id)).orElseThrow().recomendaciones().get(1).texto())
+                .isEqualTo("Primera");
+    }
+
+    private static GeneracionRecomendaciones generacion(long id, String version, String texto) {
+        return new GeneracionRecomendaciones(id, version, "MEDIO", null, List.of(
+                new RecomendacionGenerada(1, "REC-CAT-MEDIO-01", "Validar factores", TipoActivacion.CATEGORIA,
+                        "MEDIO", null),
+                new RecomendacionGenerada(2, "REC-MORAS-01", texto, TipoActivacion.FACTOR_DESFAVORABLE, null,
+                        "NUMERO_MORAS")));
+    }
+
     // ---------------------------------------------------------------------------------------
 
     private static <T> T enSoloLectura(Supplier<T> consulta) {
@@ -272,6 +390,13 @@ class EsquemaScoringContratoIT {
             String sql = Files.readString(archivo, StandardCharsets.UTF_8).replace("${flyway:defaultSchema}", ESQUEMA);
             transaccion.executeWithoutResult(estado -> jdbcTemplate.execute(sql));
         }
+    }
+
+    /** Migración V1 de esta API (recomendaciones), en el mismo esquema temporal. */
+    private static void aplicarMigracionPropia() throws IOException {
+        String sql = Files.readString(MIGRACION_PROPIA, StandardCharsets.UTF_8).replace("${flyway:defaultSchema}",
+                ESQUEMA);
+        transaccion.executeWithoutResult(estado -> jdbcTemplate.execute(sql));
     }
 
     private static int version(Path archivo) {
