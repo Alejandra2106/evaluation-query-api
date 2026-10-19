@@ -28,11 +28,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * HU14 con el catálogo incluido, que es un BORRADOR no aprobado (P-HU14-01): la saga habilitada no genera
+ * HU14 con un catálogo BORRADOR (no aprobado; solo de prueba): la saga habilitada no genera
  * ninguna recomendación y recibe 503 CATALOGO_NO_DISPONIBLE, que trata como transitorio.
  */
 @SpringBootTest(properties = {
         "evaluationquery.saga.habilitada=true",
+        "evaluationquery.catalogo.ubicacion=classpath:catalogo/recomendaciones-prueba-borrador.json",
         "evaluationquery.servicio-jwt.id-clave=" + RecomendacionesCatalogoBorradorIntegracionTest.KID})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")

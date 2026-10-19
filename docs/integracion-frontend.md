@@ -120,20 +120,26 @@ Variables comunes: `AUTH_JWT_ISSUER` (igual en las tres API) y `CORS_ALLOWED_ORI
 | `evaluation-query-api` | `EVALUATION_QUERY_DB_URL`, `EVALUATION_QUERY_DB_USERNAME`, `EVALUATION_QUERY_DB_PASSWORD`, `EVALUATION_QUERY_JWT_PUBLIC_KEY_LOCATION`, `SPRING_FLYWAY_USER`, `SPRING_FLYWAY_PASSWORD` (opcional `EVALUATION_QUERY_DB_SCHEMA`); con la saga: `EVALUATION_QUERY_SAGA_HABILITADA=true`, `SCORING_SERVICE_JWT_KEY_ID`, `SCORING_SERVICE_JWT_PUBLIC_KEY_LOCATION`, `EVALUATION_QUERY_CATALOGO_LOCATION` (catálogo APROBADO) |
 
 Orden: 1) base de datos con los esquemas `auth` y `consulta` y el rol de `evaluation-query-api` creados
-(`evaluation-query-api/docs/operacion/preparar-motor-scoring.sql`); 2) `auth-api` (aplica su Flyway);
-3) `scoring-api` (aplica V1–V11 en `public`); 4) `evaluation-query-api` (aplica su V1 en `consulta`; necesita
-las tablas de `scoring-api`). Las dos API consumidoras usan la clave **pública** del par de `auth-api`; la
+(`evaluation-query-api/docs/operacion/01-preparar-antes-de-migrar.sql`); 2) `auth-api` (aplica su Flyway);
+3) `scoring-api` (V1–V11 en `public`); 4) `evaluation-query-api` (su V1 en `consulta`; necesita las tablas de
+`scoring-api`). `scoring-api` y `evaluation-query-api` solo migran con `SCORING_FLYWAY_MIGRAR_AL_ARRANCAR=true` o
+`EVALUATION_QUERY_FLYWAY_MIGRAR_AL_ARRANCAR=true`; sin ellas, con migraciones pendientes no arrancan. En una base
+local nueva hay que arrancarlas una vez con esa variable. Las dos API consumidoras usan la clave **pública** del par de `auth-api`; la
 privada solo la tiene `auth-api`. El par de servicio de la saga es otro: su privada solo la tiene
 `scoring-api` y su pública, `evaluation-query-api`. En local, `AUTH_COOKIE_SECURE=false` puede ser necesario si
 el frontend se sirve por HTTP (no verificado).
 
 ## 8. Bloqueos y limitaciones
 
-- **Catálogo de recomendaciones (P-HU14-01):** el incluido es un BORRADOR no aprobado por el negocio. Con él
-  no se genera ninguna recomendación: con la saga habilitada, las evaluaciones nuevas quedan PENDIENTE hasta
-  que se instale un catálogo APROBADO. Con la saga deshabilitada (valor por defecto) también quedan PENDIENTE.
-  El flujo de extremo a extremo usó un catálogo **solo de prueba**.
-- **`motor_scoring`:** sigue en V9. Al arrancar `scoring-api` con HU14 se aplican V10 y V11 automáticamente;
-  `evaluation-query-api` necesita antes el esquema `consulta` y su rol (script escrito, no ejecutado).
-- **No verificado:** cookies de renovación desde un navegador real, tiempos de respuesta en un entorno
-  representativo.
+- **Catálogo de recomendaciones (P-HU14-01):** versión 1 aprobada el 2026-10-19. Con la saga deshabilitada
+  (valor por defecto) las evaluaciones nuevas quedan PENDIENTE: en local hay que habilitarla en
+  `scoring-api` y en `evaluation-query-api`.
+- **`motor_scoring`:** desplegado el 2026-10-19 (V11, esquema `consulta` y roles de ejecución). Faltan las
+  contraseñas de `scoring_app` y `consulta_app` y las claves de la saga (ver
+  `scoring-api/docs/operacion/despliegue-v10-v11.md`). No hay ninguna política publicada y, con las reglas
+  actuales, una evaluación puede sumar más de 130 puntos y responder 409 `PUNTAJE_SIN_CLASIFICACION`.
+- **Verificado el 2026-10-19 (entorno aislado):** cookies de renovación en Chrome 155 (login, renovación con
+  cookie Secure/HttpOnly/SameSite=Strict, token renovado aceptado por `evaluation-query-api`, cierre de sesión);
+  CA12 con unas 1.400 evaluaciones: p95 entre 15 y 35 ms y máximo de 80 ms en explicación, recomendaciones e
+  historial (incluido un historial de 200 evaluaciones).
+- **No verificado:** tiempos en el servidor definitivo y con la red real.

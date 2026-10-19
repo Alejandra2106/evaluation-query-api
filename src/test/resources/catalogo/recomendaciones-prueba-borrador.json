@@ -1,0 +1,9 @@
+{
+  "version": "PRUEBA-BORRADOR",
+  "estado": "BORRADOR",
+  "nota": "Solo para pruebas automatizadas: un catálogo no aprobado no genera recomendaciones.",
+  "entradas": [
+    { "codigo": "PRUEBA-CAT-ALTO", "tipoActivacion": "CATEGORIA", "categoria": "ALTO",
+      "texto": "Texto de prueba para la categoría ALTO." }
+  ]
+}

@@ -1,7 +1,7 @@
 {
-  "version": "BORRADOR-1",
-  "estado": "BORRADOR",
-  "nota": "Borrador sujeto a aprobación del negocio (P-HU14-01). Ningún texto implica aprobar ni rechazar el crédito. Con estado distinto de APROBADO no se genera ninguna recomendación.",
+  "version": "1",
+  "estado": "APROBADO",
+  "nota": "Aprobado por María Alejandra el 2026-10-19 sin cambios respecto de BORRADOR-1 (P-HU14-01). Ningún texto implica aprobar ni rechazar el crédito. Cualquier cambio de texto o criterio exige una versión nueva aprobada; las recomendaciones ya generadas conservan su texto y su versión.",
   "entradas": [
     { "codigo": "REC-CAT-ALTO-01", "tipoActivacion": "CATEGORIA", "categoria": "ALTO",
       "texto": "Se sugiere un análisis manual ampliado del caso." },

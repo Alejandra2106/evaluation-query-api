@@ -19,12 +19,12 @@ class CatalogoRecomendacionesArchivoAdapterTest {
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
     @Test
-    void elCatalogoIncluidoEsUnBorradorQueNoGeneraRecomendaciones() {
+    void elCatalogoIncluidoEsLaVersion1Aprobada() {
         CatalogoRecomendaciones catalogo = CatalogoRecomendacionesArchivoAdapter.leer(JSON,
                 new ClassPathResource("catalogo/recomendaciones.json"));
 
-        assertThat(catalogo.getVersion()).isEqualTo("BORRADOR-1");
-        assertThat(catalogo.isAprobado()).isFalse();
+        assertThat(catalogo.getVersion()).isEqualTo("1");
+        assertThat(catalogo.isAprobado()).isTrue();
         assertThat(catalogo.getEntradas()).extracting(EntradaCatalogo::codigo).containsExactly("REC-CAT-ALTO-01",
                 "REC-CAT-MEDIO-01", "REC-MORAS-01", "REC-ENDEUD-01", "REC-INGRESOS-01", "REC-HISTORIAL-01",
                 "REC-ANTIG-01");
@@ -39,6 +39,12 @@ class CatalogoRecomendacionesArchivoAdapterTest {
 
         assertThat(catalogo.isAprobado()).isTrue();
         assertThat(catalogo.getVersion()).isEqualTo("V7");
+    }
+
+    @Test
+    void unCatalogoBorradorNoGeneraRecomendaciones() {
+        assertThat(CatalogoRecomendacionesArchivoAdapter.leer(JSON,
+                new ClassPathResource("catalogo/recomendaciones-prueba-borrador.json")).isAprobado()).isFalse();
     }
 
     @Test

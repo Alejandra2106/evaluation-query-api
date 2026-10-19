@@ -4,10 +4,9 @@ API del Motor de Scoring de Riesgo Crediticio para consultar la explicación de 
 recomendaciones (HU14) y el historial de evaluaciones de un solicitante (HU15), con la autenticación y
 autorización transversal de HU10.
 
-Estado (2026-10-18): HU13, HU14 y HU15 implementadas sobre el esquema de `scoring-api` con la saga de
-recomendaciones (V1–V11). El catálogo de recomendaciones incluido es un **BORRADOR** no aprobado por el negocio
-(P-HU14-01): con él no se genera ninguna recomendación y la saga de `scoring-api` deja las evaluaciones
-PENDIENTE hasta que exista un catálogo APROBADO. No habilitar la saga en bases compartidas sin ese catálogo.
+Estado (2026-10-19): HU13, HU14 y HU15 implementadas sobre el esquema de `scoring-api` con la saga de
+recomendaciones (V1–V11). El catálogo de recomendaciones incluido es la **versión 1, APROBADA** por María
+Alejandra el 2026-10-19 (P-HU14-01), y la definición de factor desfavorable está confirmada (P-HU14-02).
 
 ## Arquitectura
 
@@ -80,7 +79,7 @@ una aprobación ni un rechazo del crédito:
 ```
 
 En las evaluaciones anteriores a la saga: `generadas: false`, `versionCatalogo` y `fechaGeneracion` en `null`
-y lista vacía (P-HU14-04). Selección (borrador P-HU14-02): una recomendación por la categoría persistida y una
+y lista vacía (P-HU14-04). Selección (P-HU14-02, confirmada): una recomendación por la categoría persistida y una
 por cada variable con algún factor desfavorable (condición cumplida con contribución negativa); primero la de
 categoría y después las variables en orden alfabético; ante varias entradas para el mismo criterio, la de
 código menor.
@@ -114,8 +113,9 @@ las evaluaciones PENDIENTE (CA08); `estado` es `COMPLETADA` o `null` (anterior a
 | `EVALUATION_QUERY_DB_URL` | Sí | Base de `scoring-api`, con el formato `postgresql://host:puerto/base` (Spring agrega `jdbc:`) |
 | `EVALUATION_QUERY_DB_USERNAME` / `EVALUATION_QUERY_DB_PASSWORD` | Sí | Rol de la aplicación: **solo SELECT** sobre las tablas de `scoring-api` y SELECT e INSERT sobre las de su esquema propio |
 | `EVALUATION_QUERY_DB_SCHEMA` | No | Esquema propio de las recomendaciones (por defecto `consulta`); debe existir (Flyway no lo crea) |
-| `SPRING_FLYWAY_USER` / `SPRING_FLYWAY_PASSWORD` | Recomendadas | Rol propietario del esquema propio, que ejecuta la migración V1 de esta API; si faltan, Flyway usa el rol de la aplicación |
-| `EVALUATION_QUERY_CATALOGO_LOCATION` | No | Catálogo de recomendaciones (por defecto el BORRADOR incluido, `classpath:catalogo/recomendaciones.json`); solo uno con `"estado": "APROBADO"` genera recomendaciones |
+| `EVALUATION_QUERY_FLYWAY_MIGRAR_AL_ARRANCAR` | No | `false` por defecto: Flyway solo valida y, con migraciones pendientes, la aplicación no arranca y no aplica nada. `true` solo en un despliegue controlado |
+| `SPRING_FLYWAY_USER` / `SPRING_FLYWAY_PASSWORD` | Solo al migrar | Rol propietario del esquema propio, que aplica la migración V1 de esta API |
+| `EVALUATION_QUERY_CATALOGO_LOCATION` | No | Catálogo de recomendaciones (por defecto la versión 1 aprobada incluida, `classpath:catalogo/recomendaciones.json`); solo uno con `"estado": "APROBADO"` genera recomendaciones |
 | `EVALUATION_QUERY_SAGA_HABILITADA` | No | `true` habilita la operación interna de generación (por defecto `false`) |
 | `SCORING_SERVICE_JWT_KEY_ID` / `SCORING_SERVICE_JWT_PUBLIC_KEY_LOCATION` | Con la saga | `kid` y clave pública X.509 del par de servicio de `scoring-api` (mismos valores que allí) |
 | `SCORING_SERVICE_JWT_PREVIOUS_KEY_ID` / `SCORING_SERVICE_JWT_PREVIOUS_PUBLIC_KEY_LOCATION` | No | Clave anterior, solo durante una rotación |
@@ -126,7 +126,8 @@ las evaluaciones PENDIENTE (CA08); `estado` es `COMPLETADA` o `null` (anterior a
 Sin `AUTH_JWT_ISSUER`, sin una clave pública válida, sin la conexión a la base o con un catálogo ilegible la
 aplicación no arranca; con la saga habilitada, tampoco sin la clave pública de servicio. La garantía de solo
 lectura sobre `scoring-api` es el rol de base de datos: el administrador lo crea con
-`docs/operacion/preparar-motor-scoring.sql` (rol, permisos y esquema propio). Ese script **no se ha ejecutado**
+`docs/operacion/01-preparar-antes-de-migrar.sql` y `02-permisos-despues-de-migrar.sql` (rol, permisos y esquema
+propio; procedimiento en `docs/operacion/despliegue.md`). Esos scripts **no se han ejecutado**
 sobre `motor_scoring` y requiere autorización.
 
 ## Saga de recomendaciones (HU14)

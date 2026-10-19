@@ -10,9 +10,9 @@ Característica: Generar y consultar recomendaciones
   # consulta, esquema propio con su V1 y catálogo en JSON. Verificada con pruebas unitarias y de integración
   # (H2), EsquemaScoringContratoIT y TrabajoRecomendacionAdapterIT (PostgreSQL, esquemas temporales) y un flujo
   # de extremo a extremo con las tres API en motor_scoring_it, con un catálogo APROBADO solo de prueba.
-  # V10 y V11 no están aplicadas en motor_scoring. El catálogo incluido es un BORRADOR (P-HU14-01): con él no
-  # se genera ninguna recomendación. P-HU14-02 a P-HU14-06 y P-HU14-08 se implementaron tal como están
-  # propuestos y siguen pendientes de confirmación formal.
+  # El catálogo incluido es la versión 1, aprobada el 2026-10-19 (P-HU14-01); la definición de factor
+  # desfavorable está confirmada (P-HU14-02). P-HU14-03 a P-HU14-06 y P-HU14-08 se implementaron tal como
+  # están propuestos y siguen pendientes de confirmación formal.
   #
   # Criterios originales (texto sin cambios):
   #   CA01. Generar las recomendaciones durante el proceso de evaluación, no durante la primera consulta.
@@ -65,10 +65,10 @@ Característica: Generar y consultar recomendaciones
   #   catálogo aprobado; S1 como mecanismo preferido de identidad de servicio.
   #
   # Decisiones pendientes de aprobación (no se inventa una regla):
-  # - P-HU14-01. Contenido del catálogo (códigos, textos, criterios de activación y versión). El borrador
-  #   existente no está aprobado por el negocio.
-  # - P-HU14-02. Definición de factor desfavorable (CA02). Borrador: condición cumplida con contribución
-  #   negativa; una condición incumplida no es por sí misma un factor desfavorable.
+  # - P-HU14-01. Contenido del catálogo: APROBADO el 2026-10-19 por María Alejandra, sin cambios respecto de
+  #   BORRADOR-1, como versión 1.
+  # - P-HU14-02. Definición de factor desfavorable (CA02): CONFIRMADA el 2026-10-19: condición cumplida con
+  #   contribución negativa; una condición incumplida no es por sí misma un factor desfavorable.
   # - P-HU14-03. Respuesta cuando la evaluación está PENDIENTE: propuesta 409 con el código
   #   EVALUACION_PENDIENTE.
   # - P-HU14-04. Respuesta para evaluaciones anteriores a la saga: propuesta 200 con lista vacía y

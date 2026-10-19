@@ -54,8 +54,8 @@ Verificado también con las tres API levantadas y tokens reales de `auth-api` en
 ## Propuestas pendientes de decisión
 
 - **P-HU10-04:** relación entre la ventana de 15 minutos de CA10 y los 60 s de tolerancia de reloj sobre `exp`.
-- **P-HU14-01:** contenido del catálogo de recomendaciones. El incluido es un BORRADOR; sin un catálogo
-  APROBADO la operación interna responde 503 `CATALOGO_NO_DISPONIBLE` y no genera nada.
+- **P-HU14-01** quedó resuelta el 2026-10-19 (catálogo versión 1 aprobado). Sin un catálogo APROBADO, la
+  operación interna responde 503 `CATALOGO_NO_DISPONIBLE` y no genera nada.
 
 Códigos de error: `EVALUACION_NO_ENCONTRADA` (P-HU13-07), `SOLICITANTE_NO_ENCONTRADO` (P-HU15-05) y
 `EVALUACION_PENDIENTE` (P-HU13-02, P-HU14-03), con el mismo formato que `scoring-api`. La operación interna
